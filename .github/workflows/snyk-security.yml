@@ -1,0 +1,58 @@
+name: Snyk Security
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+
+jobs:
+  snyk:
+    permissions:
+      contents: read 
+      security-events: write 
+      actions: read 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. Node.js mühitini mütləq aktiv edirik (Bura vacibdir!)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 2. Snyk CLI-ı yükləyirik
+      - name: Set up Snyk CLI to check for security issues
+        uses: snyk/actions/setup@v4
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # 3. SAST testini edirik (Xəta tapanda pipeline-ın qırılmaması üçün || true əlavə etdik)
+      - name: Snyk Code test
+        run: snyk code test --sarif > snyk-code.sarif || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # 4. Açıq qaynak paketlərini Snyk panelinə göndəririk
+      - name: Snyk Open Source monitor
+        run: snyk monitor --all-projects || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # 5. Docker imicini qururuq və yoxlayırıq
+      - name: Build a Docker image
+        run: docker build -t your/image-to-test .
+
+      - name: Snyk Container monitor
+        run: snyk container monitor your/image-to-test --file=Dockerfile || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # 6. SAST nəticələrini GitHub Security-ə yükləyirik
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk-code.sarif
