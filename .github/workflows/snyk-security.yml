@@ -32,13 +32,13 @@ jobs:
 
       # 3. SAST testini edirik (Xəta tapanda pipeline-ın qırılmaması üçün || true əlavə etdik)
       - name: Snyk Code test
-        run: snyk code test --sarif > snyk-code.sarif || true
+        run: snyk auth ${SNYK_TOKEN} && snyk code test --sarif > snyk-code.sarif || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       # 4. Açıq qaynak paketlərini Snyk panelinə göndəririk
       - name: Snyk Open Source monitor
-        run: snyk monitor --all-projects || true
+        run: snyk auth ${SNYK_TOKEN} && snyk monitor --all-projects || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -47,7 +47,7 @@ jobs:
         run: docker build -t your/image-to-test .
 
       - name: Snyk Container monitor
-        run: snyk container monitor your/image-to-test --file=Dockerfile || true
+        run: snyk auth ${SNYK_TOKEN} && snyk container monitor your/image-to-test --file=Dockerfile || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
