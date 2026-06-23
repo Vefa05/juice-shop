@@ -1,0 +1,49 @@
+name: DVWA Advanced SAST Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  semgrep:
+    name: 🔍 Semgrep Advanced SAST Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      # 1. Kodu GitHub Runner-a kopyalayırıq
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Semgrep-i quraşdırıb işə salırıq (Düzəldilmiş qaydalar ilə)
+      - name: Run Semgrep SAST
+        continue-on-error: true 
+        run: |
+          python3 -m pip install semgrep --quiet
+          echo "🔍 Semgrep skanı başlayır..."
+          semgrep ci \
+            --config p/default \
+            --config p/security-audit \
+            --config p/php \
+            --config p/secrets \
+            --sarif \
+            --sarif-output semgrep-results.sarif
+
+      # 3. SARIF faylını Actions panelindən yükləyə bilmək üçün arxivləyirik (Artifact)
+      - name: 📦 Upload SARIF as Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-raw-results
+          path: semgrep-results.sarif
+
+      # 4. Nəticələri GitHub Security (Code Scanning) bölməsinə göndəririk (v4 versiyası ilə)
+      - name: Upload SARIF Results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep-results.sarif
+          category: semgrep
+        if: always()
