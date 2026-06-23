@@ -17,16 +17,16 @@ jobs:
       actions: read 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v1
 
       # 1. Node.js mühitini mütləq aktiv edirik (Bura vacibdir!)
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v1
         with:
           node-version: 20
 
       # 2. Snyk CLI-ı yükləyirik
       - name: Set up Snyk CLI to check for security issues
-        uses: snyk/actions/setup@v4
+        uses: snyk/actions/setup@v1
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
